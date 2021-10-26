@@ -1,0 +1,179 @@
+						######### GranuFlow DEM Simulation #########
+					### Based on Dan Rhymer's Stired Ball Mill Simulation Script ###
+					
+print "Running GranFlow Digital Twin"
+
+######### General #########
+atom_style	granular
+boundary	f f f
+units		si
+communicate	single vel yes
+newton		off
+
+print "Defined general simulation parameters"
+
+######### System Constraints and Particle Properties #########
+
+####### System Constraints #######
+
+# Simulation Boundaries
+variable	xmin	equal	-0.11	# In metres						# Simulation dimensions
+variable	xmax	equal	0.11	# In metres
+variable	ymin	equal	-0.11	# In metres
+variable	ymax	equal	0.11	# In metres
+variable	zmin	equal	-0.02	# In metres
+variable	zmax	equal	0.51	# In metres
+
+variable	dt	equal	1e-5	# Timestep in seconds					# Timestep
+
+print "Defined system boundaries"
+
+######### Specific simulation constraints #########
+variable	natoms	equal	2	#1 -> particles, #2 -> geometry
+
+print "Defined simulation constraints"
+
+# Variables for Material Properties					
+variable	ym1	equal	2.1e7	#N/mm^2						#Youngs Modulus
+variable	ym2	equal	2.1e7	#N/mm^2
+
+variable	pois1	equal	0.3								#poisson number
+variable	pois2	equal	0.3
+
+print "Defined Young's Modulus"
+
+# Contact property variables									# Coefficient of restitution values
+variable	CoR11	equal	0.6
+variable	CoR12	equal	0.6
+variable	CoR21	equal	0.6
+variable	CoR22	equal	0.6
+
+variable	sf11	equal	0.2								# sliding friction
+variable	sf12	equal	0.2
+variable	sf21	equal	0.2
+variable	sf22	equal	0.2
+
+variable	rf11	equal	0.2								# rolling friction
+variable	rf12	equal	0.2
+variable	rf21	equal	0.2
+variable	rf22	equal	0.2
+
+variable	nradii		equal	2							# number of differnet radii
+variable	radius1	equal	0.0015	#m						# Radius of particle fraction 1
+variable	radius2	equal	0.0017	#m
+variable	frac1		equal	0.6							# Fraction of particles with radius 1
+variable	frac2		equal	0.4
+variable	density	equal	1460	#kg/m^3					# Density
+
+print "Defined contact property variables"
+
+						######### Process Steps #########
+
+#### Filling Parameters ####
+
+variable	filltime	equal	60.0				#s
+variable	fillmass	equal	0.5				#kg
+variable	fillmassrate	equal	${fillmass}/${filltime}	#kg/s
+variable	fillsteps	equal	${filltime}/${dt}		# Calculates timesteps from time
+
+print "Defined filling parameters"
+
+#### Rotate Plate Parameters ####
+
+variable	rotatevel	equal	0.4	#m/s
+variable	rotatetime	equal	1 	#second
+variable	rotatesteps	equal	${rotatetime}/${dt}		# Time to steps
+
+#### Flow Time ####
+
+variable	settletime	equal	30.0				# s
+variable	settlesteps	equal	${settletime}/${dt}		# Calculuate timesteps from time
+
+print "Defined parameters for flow test duration"
+
+#### Simulation Region ####
+
+region		reg block ${xmin} ${xmax} ${ymin} ${ymax} ${zmin} ${zmax} units box
+create_box	2 reg
+neighbor	0.004 bin
+neigh_modify	delay 0
+
+print "Defined simulation region"
+
+						######### Particle Definitions #########
+						
+#### Defining Contact Models ####						
+
+pair_style gran model hertz tangential history rolling_friction epsd2	#contact model
+pair_coeff * *
+timestep 	${dt}
+fix		integrator all nve/sphere
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+print "Defined contact models"
+
+#### Material Properties ####
+
+fix 	m1 all property/global youngsModulus peratomtype ${ym1} ${ym2}
+fix 	m2 all property/global poissonsRatio peratomtype ${pois1} ${pois2}
+fix 	m3 all property/global coefficientRestitution peratomtypepair ${natoms} ${CoR11} ${CoR12} ${CoR21} ${CoR22}
+fix 	m4 all property/global coefficientFriction peratomtypepair ${natoms} ${sf11} ${sf12} ${sf21} ${sf22}
+fix 	m5 all property/global coefficientRollingFriction peratomtypepair ${natoms} ${rf11} ${rf12} ${rf21} ${rf22}
+
+print "Applied material properties"
+
+						######### Create Particles and Geometry #########
+						
+#### Load Geometry ####
+						
+fix	plate	all mesh/surface file Plate.stl	type 2  scale 0.001
+fix	tube	all mesh/surface file Tube.stl	type 2  scale 0.001
+
+fix 	walls 	all wall/gran model hertz tangential history rolling_friction epsd2 mesh n_meshes 2 meshes plate tube	# Number of meshes + list
+
+print "Loaded geometry"
+
+#### Generate and Insert Particles ####
+
+fix	pts1 all particletemplate/sphere 16127 atom_type 1 density constant ${density} radius constant ${radius1}
+fix	pts2 all particletemplate/sphere 11887 atom_type 1 density constant ${density} radius constant ${radius2}
+fix 	pdd1 all particledistribution/discrete 32452867 ${nradii} pts1 ${frac1} pts2 ${frac2}
+
+print "Applied particle properties and particle distribution"
+
+fix	ins_mesh all mesh/surface/planar file InsertionPlate.stl type 1 scale 0.001
+fix 	ins all insert/stream seed 86028157 distributiontemplate pdd1 &
+        mass ${fillmass} massrate ${fillmassrate} overlapcheck yes all_in yes vel constant 0 0 -0.05 &
+        insertion_face ins_mesh extrude_length 0.1
+
+print "Loaded particle insertion face"
+        
+#### Dump Data ####
+
+shell 	mkdir post
+
+variable dumptime equal 0.04													# Dump Time (1 image every 0.04s)
+variable dumpstep equal ${dumptime}/${dt}											# Dump time to time steps
+
+dump	dmpparticle all custom ${dumpstep} post/particles_*.liggghts id type x y z vx vy vz fx fy fz radius mass	# Dump particle data
+dump	dmpground all mesh/stl ${dumpstep} post/plate*.stl plate
+dump	dmpsilo all mesh/stl ${dumpstep} post/tube*.stl tube
+
+print "Defined dump parameters"
+
+							######### Run Simulation #########
+							
+#### Run Fill Steps ####
+
+run ${fillsteps}
+unfix ins
+
+#### Rotate Plate ####
+
+fix	RotatePlate	all move/mesh mesh Plate rotate origin 0. 0. 0. axis  0. 0. 1. period 0.05
+run	 ${rotatesteps}
+unfix	RotatePlate
+
+#### Flow Time ####
+
+run ${settlesteps}
