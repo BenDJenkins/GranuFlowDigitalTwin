@@ -154,7 +154,7 @@ shell 	mkdir post
 variable dumptime equal 0.04													# Dump Time (1 image every 0.04s)
 variable dumpstep equal ${dumptime}/${dt}											# Dump time to time steps
 
-dump	dmpparticle all custom ${dumpstep} post/particles_*.liggghts id type x y z vx vy vz fx fy fz radius mass	# Dump particle data
+dump	dmpparticle all custom/vtk ${dumpstep} post/particles_*.vtk id type x y z vx vy vz fx fy fz radius mass	# Dump particle data
 dump	dmpground all mesh/stl ${dumpstep} post/plate*.stl plate
 dump	dmpsilo all mesh/stl ${dumpstep} post/tube*.stl tube
 
