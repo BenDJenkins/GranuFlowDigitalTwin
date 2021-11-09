@@ -15,4 +15,4 @@ module load LIGGGHTS/3.8.0-foss-2020a
 
 module load Anaconda3
 
-lmp_auto < Run_GF_Sim.liggghts
+python3 run_simulation_batch.py
