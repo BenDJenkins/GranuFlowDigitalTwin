@@ -128,8 +128,8 @@ print "Applied material properties"
 						
 #### Load Geometry ####
 						
-fix	plate	all mesh/surface file Plate.stl	type 2  scale 0.001
-fix	tube	all mesh/surface file Tube.stl	type 2  scale 0.001
+fix	plate	all mesh/surface file geometry/Plate.stl	type 2  scale 0.001
+fix	tube	all mesh/surface file geometry/Tube.stl	type 2  scale 0.001
 
 fix 	walls 	all wall/gran model hertz tangential history rolling_friction epsd2 mesh n_meshes 2 meshes plate tube	# Number of meshes + list
 
