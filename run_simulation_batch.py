@@ -13,7 +13,8 @@ for i in range(len(orifice_size)):
     print(orifice_size[i])
     os.popen('cp Run_GF_Sim.liggghts Run_GF_Sim_{}.liggghts'.format(orifice_size[i]))
 
-    with open(os.path.join(""))
+    with open('Run_GF_Sim_{}.liggghts'.format(orifice_size[i])) as f:
+        sim_input = f.readlines()
 
 # lmp = liggghts()
 
