@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time 10-0:0
-#SBATCH --ntasks 16
+#SBATCH --ntasks 32
 #SBATCH --qos bbdefault
 #SBATCH --account=windowcr-granutools-engd
 #SBATCH --mail-type ALL
@@ -15,4 +15,4 @@ module load LIGGGHTS/3.8.0-foss-2020a
 
 module load Anaconda3
 
-python3 run_simulation_batch.py
+lmp_auto < Run_GF_Sim.liggghts
