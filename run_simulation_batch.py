@@ -1,21 +1,37 @@
 from liggghts import liggghts
 import numpy as np
 import os
+import shutil
 
 ## Orifice Sizes
 
-orifice_size = [2]  # mm ((TEST))
+orifice_size = [2, 4]  # mm ((TEST))
 # orifice_size = [2, 4, 8, 12, 18, 22, 28]  # mm
 # orifice_size = np.divide(orifice_size, 1000)  # Convert to meters
 
 for i in range(len(orifice_size)):
 
-    print(orifice_size[i])
-    os.popen('cp Run_GF_Sim.liggghts Run_GF_Sim_{}.liggghts'.format(orifice_size[i]))
+    # Create the LIGGGHTS script files for different orifice sizes using template.
 
-    with open('Run_GF_Sim_{}.liggghts'.format(orifice_size[i])) as f:
+    shutil.copyfile('Run_GF_Sim.liggghts', 'Run_GF_Sim_{}mm.liggghts'.format(orifice_size[i]))
+
+    with open('Run_GF_Sim_{}mm.liggghts'.format(orifice_size[i])) as f:
         sim_input = f.readlines()
 
-# lmp = liggghts()
+    sim_input[128] = "fix	plate	all mesh/surface file geometry/Plate" + str(orifice_size[i]) + "mm.stl	type 2  scale 0.001\n"
+    sim_input[186] = '''fix output all print ${outputsteps} "$t,${massTube}" screen no file MassFlowrate''' + str(orifice_size[i]) + 'mm.csv title "Time,MassInTube"\n'
 
-# lmp.file('Run_GF_Sim.liggghts')  # Read LIGGGHTS file
+    with open('Run_GF_Sim_{}mm.liggghts'.format(orifice_size[i]), "w") as f:
+        f.writelines(sim_input)
+
+    # Create the run.sh files for BlueBear.
+
+    with open('run_simulation.sh', "r") as f:
+        lines = f.readlines()
+
+    lines[17] = 'lmp_auto < Run_GF_Sim_' + str(orifice_size[i]) + 'mm.liggghts'
+    batch_filename = f"run_simulation" + str(orifice_size[i]) + "mm"
+    with open(batch_filename, "w") as f:
+        f.writelines(lines)
+
+    os.system(f"sbatch {batch_filename}")
