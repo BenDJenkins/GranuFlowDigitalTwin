@@ -26,7 +26,7 @@ for i in range(len(orifice_size)):
         lines = f.readlines()
 
     lines[17] = 'lmp_auto < Run_GF_Sim_' + str(orifice_size[i]) + 'mm.liggghts'
-    batch_filename = f"run_simulation" + str(orifice_size[i]) + "mm"
+    batch_filename = f"run_simulation" + str(orifice_size[i]) + "mm.sh"
     with open(batch_filename, "w") as f:
         f.writelines(lines)
 
