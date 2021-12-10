@@ -1,13 +1,9 @@
-from liggghts import liggghts
-import numpy as np
 import os
 import shutil
 
 ## Orifice Sizes
 
-orifice_size = [2, 4]  # mm ((TEST))
-# orifice_size = [2, 4, 8, 12, 18, 22, 28]  # mm
-# orifice_size = np.divide(orifice_size, 1000)  # Convert to meters
+orifice_size = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28]  # mm
 
 for i in range(len(orifice_size)):
 
